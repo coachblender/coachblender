@@ -1,16 +1,14 @@
-## Hi there 👋
+# 1. Lokales Next.js-Projekt erstellen (falls noch nicht geschehen)
+npx create-next-app@latest coachblender --typescript --tailwind
 
-<!--
-**coachblender/coachblender** is a ✨ _special_ ✨ repository because its `README.md` (this file) appears on your GitHub profile.
+# 2. In den Ordner wechseln
+cd coachblender
 
-Here are some ideas to get you started:
+# 3. Git initialisieren
+git init
 
-- 🔭 I’m currently working on ...
-- 🌱 I’m currently learning ...
-- 👯 I’m looking to collaborate on ...
-- 🤔 I’m looking for help with ...
-- 💬 Ask me about ...
-- 📫 How to reach me: ...
-- 😄 Pronouns: ...
-- ⚡ Fun fact: ...
--->
+# 4. GitHub-Repo erstellen (auf github.com/new) und dann:
+git remote add origin https://github.com/dein-benutzername/coachblender.git
+git add .
+git commit -m "Initial commit"
+git push -u origin main
