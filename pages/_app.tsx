@@ -1,30 +1,26 @@
 // pages/_app.tsx
 import Head from 'next/head';
 import { useEffect } from 'react';
-import { createClient } from '@supabase/supabase-client';
+import { createClient } from '@supabase/supabase-js';
 
-// Initialisierung des Supabase-Clients über die Vercel-Umgebungsvariablen
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL || '',
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || ''
 );
 
-export default function App({ Component, pageProps }) {
+export default function App({ Component, pageProps }: any) {
   useEffect(() => {
     async function trackInstagramClick() {
       const urlParams = new URLSearchParams(window.location.search);
       const coachId = urlParams.get('coach_id');
       const affiliateId = urlParams.get('affiliate_id');
 
-      // Abbrechen, wenn die Tracking-IDs in der URL fehlen
       if (!coachId || !affiliateId) return;
 
       try {
-        // 1. IP-Adresse des In-App-Browsers ermitteln
         const ipResponse = await fetch('https://ipify.org');
         const { ip } = await ipResponse.json();
 
-        // 2. Eindeutigen Device-Fingerprint generieren (Instagram-Schutz)
         const rawFingerprint = `${navigator.userAgent}-${navigator.language}-${screen.colorDepth}`;
         const encoder = new TextEncoder();
         const data = encoder.encode(rawFingerprint);
@@ -33,7 +29,6 @@ export default function App({ Component, pageProps }) {
           .map(b => b.toString(16).padStart(2, '0'))
           .join('');
 
-        // 3. Klick direkt in die Supabase 'clicks'-Tabelle feuern
         const { data: clickRecord, error } = await supabase
           .from('clicks')
           .insert([{
@@ -48,7 +43,6 @@ export default function App({ Component, pageProps }) {
 
         if (error) throw error;
 
-        // 4. IDs im Browser merken für die spätere 5%-Maut-Zuordnung beim Kauf
         sessionStorage.setItem('cb_click_id', clickRecord.click_id);
         sessionStorage.setItem('matched_affiliate', affiliateId);
         console.log('Tracking aktiv. Klick-ID erfasst:', clickRecord.click_id);
