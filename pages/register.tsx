@@ -1,4 +1,20 @@
-  const handleRegister = async (e: React.FormEvent) => {
+import { useState } from 'react';
+import { createClient } from '@supabase/supabase-js';
+
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://supabase.co',
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'placeholder_key'
+);
+
+export default function Register() {
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [name, setName] = useState('');
+  const [id, setId] = useState(''); 
+  const [role, setRole] = useState('coach'); 
+  const [message, setMessage] = useState('');
+
+const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
     setMessage('Verarbeite...');
 
