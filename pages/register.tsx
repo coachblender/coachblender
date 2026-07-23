@@ -1,4 +1,4 @@
-// pages/register.tsx
+// coachblender/pages/register.tsx
 import { useState } from 'react';
 import { createClient } from '@supabase/supabase-js';
 
@@ -11,8 +11,8 @@ export default function Register() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [name, setName] = useState('');
-  const [id, setId] = useState(''); // coach_id oder affiliate_id
-  const [role, setRole] = useState('coach'); // 'coach' oder 'affiliate'
+  const [id, setId] = useState(''); 
+  const [role, setRole] = useState('coach'); 
   const [message, setMessage] = useState('');
 
   const handleRegister = async (e: React.FormEvent) => {
@@ -20,7 +20,7 @@ export default function Register() {
     setMessage('Verarbeite...');
 
     try {
-      // 1. Benutzer im geschlossenen Supabase-Auth-System anlegen
+      // 1. Benutzer im Auth-System anlegen
       const { data: authData, error: authError } = await supabase.auth.signUp({
         email,
         password,
@@ -29,16 +29,24 @@ export default function Register() {
       if (authError) throw authError;
       if (!authData.user) throw new Error('Registrierung fehlgeschlagen.');
 
-      // 2. Eintrag in der jeweiligen Fach-Tabelle (coaches oder affiliates) anlegen
+      // 2. Eintrag in der exakten AWIN-Tabelle anlegen
       if (role === 'coach') {
         const { error: coachError } = await supabase
           .from('coaches')
-          .insert([{ coach_id: id, user_id: authData.user.id, company_name: name }]);
+          .insert([{ 
+            coach_id: id, 
+            user_id: authData.user.id, 
+            company_name: name 
+          }]);
         if (coachError) throw coachError;
       } else {
         const { error: affError } = await supabase
           .from('affiliates')
-          .insert([{ affiliate_id: id, user_id: authData.user.id, full_name: name }]);
+          .insert([{ 
+            affiliate_id: id, 
+            user_id: authData.user.id, 
+            full_name: name 
+          }]);
         if (affError) throw affError;
       }
 
