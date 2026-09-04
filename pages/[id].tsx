@@ -15,11 +15,9 @@ export default function Workspace() {
   useEffect(() => {
     if (!id) return;
 
-    // Diese Funktion prüft in Echtzeit, ob Make die Daten in Supabase abgelegt hat
     const checkData = async () => {
       try {
         // Hier wird die Zeile über die eindeutige ID (UUID) abgefragt
-        // Sobald deine Supabase-Tabelle bereit ist, entkommentierst du diese Zeilen:
         /*
         const response = await fetch(`${SUPABASE_URL}/rest/v1/anonymous_sessions?id=eq.${id}`, {
           headers: {
@@ -28,7 +26,7 @@ export default function Workspace() {
           }
         });
         const result = await response.json();
-        if (result && result[0]) {
+        if (result && result.length > 0) {
           setData(result[0]);
           if (result[0].status === 'paid') {
             setPaywallActive(false);
@@ -49,20 +47,14 @@ export default function Workspace() {
     };
 
     checkData();
-    // Ein optionaler Intervall-Check (alle 3 Sekunden), falls Make noch im Hintergrund arbeitet
     const interval = setInterval(checkData, 3000);
     return () => clearInterval(interval);
   }, [id]);
 
-  // Die unschlagbare Bezahlschranke über Polar
   const handlePayment = () => {
     if (!id) return;
 
-    // DEIN LIVE POLAR PRODUKT LINK
-    // Nutzt den URL-Pass-Through-Trick, um die UUID sauber an den Webhook weiterzugeben
     const polarProductUrl = "https://polar.sh";
-    
-    // Leitet den Nutzer direkt zum Checkout weiter und brennt die UUID in die Metadaten ein
     window.location.href = `${polarProductUrl}?metadata[anonymous_id]=${id}`;
   };
 
@@ -107,7 +99,6 @@ export default function Workspace() {
         </p>
 
         {paywallActive ? (
-          /* DIE SCHRANKE: Hier wird ab jetzt ohne Stripe-Frust abkassiert */
           <div>
             <div style={{ 
               background: '#1e1b4b', 
@@ -137,24 +128,20 @@ export default function Workspace() {
                 fontWeight: 700,
                 cursor: 'pointer',
                 width: '100%',
-                boxShadow: '0 4px 20px rgba(37, 99, 235, 0.4)',
-                transition: 'transform 0.1s ease'
+                boxShadow: '0 4px 20px rgba(37, 99, 235, 0.4)'
               }}
-              onMouseOver={(e) => e.currentTarget.style.transform = 'scale(1.01)'}
-              onMouseOut={(e) => e.currentTarget.style.transform = 'scale(1)'}
             >
               Sofort-Klick freischalten (Pay what you want)
             </button>
           </div>
         ) : (
-          /* Das befreite Ergebnis nach der erfolgreichen Polar-Maut */
           <div style={{ textAlign: 'left', background: '#064e3b', border: '1px solid #059669', padding: '24px', borderRadius: '16px' }}>
             <p style={{ color: '#a7f3d0', fontWeight: 700, marginBottom: '8px' }}>Ziel-Link freigeschaltet:</p>
             <a 
               href={data?.extracted_link} 
               target="_blank" 
               rel="noopener noreferrer"
-              style={{ color: '#ffffff', fontWeight: 600, fontSize: '1.25rem', wordBreak: 'break-all', decoration: 'underline' }}
+              style={{ color: '#ffffff', fontWeight: 600, fontSize: '1.25rem', wordBreak: 'break-all', textDecoration: 'underline' }}
             >
               {data?.extracted_link}
             </a>
