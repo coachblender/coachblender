@@ -12,13 +12,11 @@ export default function Home() {
   const [statusColor, setStatusColor] = useState('#4b5563');
   const [sessionUuid, setSessionUuid] = useState<string | null>(null);
 
-  // Die unsichtbare Magie: Sobald der Cursor ins Feld gesetzt wird, generiert das System die UUID
   const initializeSession = () => {
     if (typeof window !== 'undefined' && !sessionUuid) {
       let currentId = localStorage.getItem('coachblender_anonymous_id');
       
       if (!currentId) {
-        // Generiert eine kryptografisch sichere Browser-UUID v4
         currentId = 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
           const r = Math.random() * 16 | 0;
           const v = c === 'x' ? r : (r & 0x3 | 0x8);
@@ -39,15 +37,16 @@ export default function Home() {
       return;
     }
 
-    // Sicherstellen, dass vor dem Absenden eine UUID existiert
-    if (!sessionUuid) {
+    let currentId = sessionUuid || (typeof window !== 'undefined' ? localStorage.getItem('coachblender_anonymous_id') : null);
+
+    if (!currentId) {
       initializeSession();
+      currentId = typeof window !== 'undefined' ? localStorage.getItem('coachblender_anonymous_id') : null;
     }
 
     setStatusMsg("Verarbeite... Pipeline gestartet.");
     setStatusColor("#3b82f6");
 
-    // Dein exakter, funktionierender Make-Webhook (Stripe Live Neu / Polar)
     const makeWebhookUrl = "https://make.com";
 
     try {
@@ -55,7 +54,7 @@ export default function Home() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          anonymous_id: sessionUuid || localStorage.getItem('coachblender_anonymous_id'),
+          anonymous_id: currentId,
           instagram_url: instaUrl.trim(),
           timestamp: new Date().toISOString()
         })
@@ -64,10 +63,7 @@ export default function Home() {
       if (response.ok) {
         setStatusMsg("Erfolgreich gemixt! Weiterleitung...");
         setStatusColor("#10b981");
-        
-        // Blitzschnelle Weiterleitung des Nutzers auf seinen anonymen UUID-Workspace
-        const targetId = sessionUuid || localStorage.getItem('coachblender_anonymous_id');
-        router.push(`/${targetId}`); 
+        router.push(`/${currentId}`); 
       } else {
         setStatusMsg("Schnittstellen-Fehler. Bitte erneut versuchen.");
         setStatusColor("#ef4444");
@@ -80,7 +76,7 @@ export default function Home() {
 
   return (
     <div style={{
-      backgroundColor: '#0b0f19', /* Eiskaltes, dunkles Interface */
+      backgroundColor: '#0b0f19',
       color: '#f3f4f6',
       display: 'flex',
       flexDirection: 'column',
@@ -92,7 +88,7 @@ export default function Home() {
     }}>
       <div style={{ width: '100%', maxWidth: '680px', textAlign: 'center' }}>
         
-        {/* 1. Das Branding */}
+        {/* Branding */}
         <div style={{ marginBottom: '48px' }}>
           <h1 style={{
             fontSize: '4rem',
@@ -114,7 +110,7 @@ export default function Home() {
           </p>
         </div>
 
-        {/* 2. Das zentrale Suchfeld (Google-Style) */}
+        {/* Central Search Element (Google-Style) */}
         <div style={{
           position: 'relative',
           background: '#111827',
@@ -159,21 +155,17 @@ export default function Home() {
               cursor: 'pointer',
               display: 'flex',
               alignItems: 'center',
-              gap: '8px',
-              transition: 'background 0.2s ease'
+              gap: '8px'
             }}
-            onMouseOver={(e) => e.currentTarget.style.background = '#1d4ed8'}
-            onMouseOut={(e) => e.currentTarget.style.background = '#2563eb'}
           >
             <span>Mixen</span>
-            {/* Blitz-Symbol */}
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
               <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
             </svg>
           </button>
         </div>
 
-        {/* Unsichtbare Statusrückmeldung im Hintergrund */}
+        {/* Status Line */}
         <p style={{ 
           fontSize: '0.85rem', 
           color: statusColor, 
