@@ -1,47 +1,26 @@
 import { useRouter } from 'next/router';
 import { useEffect, useState } from 'react';
 
-// Trage hier deine echten Supabase-Zugangsdaten ein
-const SUPABASE_URL = "DEIN_SUPABASE_URL";
-const SUPABASE_ANON_KEY = "DEIN_SUPABASE_ANON_KEY";
-
 export default function Workspace() {
   const router = useRouter();
-  const { id } = router.query; // Holt die anonyme UUID aus der URL
+  const { id } = router.query;
   const [loading, setLoading] = useState(true);
   const [paywallActive, setPaywallActive] = useState(true);
-  const [data, setData] = useState<any>(null);
+  const [data, setData] = useState(null);
 
   useEffect(() => {
     if (!id) return;
 
     const checkData = async () => {
       try {
-        // Hier wird die Zeile über die eindeutige ID (UUID) abgefragt
-        /*
-        const response = await fetch(`${SUPABASE_URL}/rest/v1/anonymous_sessions?id=eq.${id}`, {
-          headers: {
-            'apikey': SUPABASE_ANON_KEY,
-            'Authorization': `Bearer ${SUPABASE_ANON_KEY}`
-          }
-        });
-        const result = await response.json();
-        if (result && result.length > 0) {
-          setData(result);
-          if (result.status === 'paid') {
-            setPaywallActive(false);
-          }
-        }
-        */
-
-        // Für den allerersten Start simulieren wir die erfolgreiche Extraktion:
+        // Simulierter Startwert
         setData({
           original_instagram: "https://instagram.com...",
           extracted_link: "https://die-geheime-kursseite-des-coaches.com"
         });
         setLoading(false);
       } catch (error) {
-        console.error("Fehler beim Laden der Daten aus Supabase:", error);
+        console.error("Fehler beim Laden:", error);
         setLoading(false);
       }
     };
@@ -53,17 +32,14 @@ export default function Workspace() {
 
   const handlePayment = () => {
     if (!id) return;
-
     const polarProductUrl = "https://polar.sh";
     window.location.href = `${polarProductUrl}?metadata[anonymous_id]=${id}`;
   };
 
   if (loading) {
     return (
-      <div style={{ backgroundColor: '#0b0f19', color: '#f3f4f6', display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '100vh' }}>
-        <p style={{ fontSize: '1.2rem', fontFamily: '-apple-system, sans-serif', letterSpacing: '0.05em' }}>
-          Mixer arbeitet... Daten werden per UUID gesichert...
-        </p>
+      <div style={{ backgroundColor: '#0b0f19', color: '#f3f4f6', display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '100vh', fontFamily: 'sans-serif' }}>
+        <p style={{ fontSize: '1.2rem', letterSpacing: '0.05em' }}>Mixer arbeitet... Daten werden per UUID gesichert...</p>
       </div>
     );
   }
@@ -78,7 +54,7 @@ export default function Workspace() {
       alignItems: 'center',
       minHeight: '100vh',
       padding: '20px',
-      fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif'
+      fontFamily: '-apple-system, BlinkMacSystemFont, sans-serif'
     }}>
       <div style={{ 
         width: '100%', 
@@ -91,29 +67,14 @@ export default function Workspace() {
         boxShadow: '0 10px 40px rgba(0,0,0,0.6)' 
       }}>
         
-        <h2 style={{ fontSize: '2.25rem', fontWeight: 900, marginBottom: '8px', color: '#ffffff', letterSpacing: '-0.03em' }}>
-          WORKSPACE
-        </h2>
-        <p style={{ color: '#4b5563', fontSize: '0.85rem', marginBottom: '32px', wordBreak: 'break-all', letterSpacing: '0.05em' }}>
-          SESSION-ID: {id}
-        </p>
+        <h2 style={{ fontSize: '2.25rem', fontWeight: 900, marginBottom: '8px', color: '#ffffff', letterSpacing: '-0.03em' }}>WORKSPACE</h2>
+        <p style={{ color: '#4b5563', fontSize: '0.85rem', marginBottom: '32px', wordBreak: 'break-all', letterSpacing: '0.05em' }}>SESSION-ID: {id}</p>
 
         {paywallActive ? (
           <div>
-            <div style={{ 
-              background: '#1e1b4b', 
-              border: '1px solid #4338ca', 
-              padding: '24px', 
-              borderRadius: '16px', 
-              marginBottom: '32px',
-              textAlign: 'left'
-            }}>
-              <p style={{ color: '#c7d2fe', fontWeight: 700, marginBottom: '6px', fontSize: '1.1rem' }}>
-                💥 Link erfolgreich extrahiert!
-              </p>
-              <p style={{ color: '#9ca3af', fontSize: '0.95rem', lineHeight: '1.5' }}>
-                Der Instagram-DM-Tunnel wurde vollständig umgangen. Schalte den Sofort-Klick frei, um den Inhalt direkt abzurufen.
-              </p>
+            <div style={{ background: '#1e1b4b', border: '1px solid #4338ca', padding: '24px', borderRadius: '16px', marginBottom: '32px', textAlign: 'left' }}>
+              <p style={{ color: '#c7d2fe', fontWeight: 700, marginBottom: '6px', fontSize: '1.1rem' }}>💥 Link erfolgreich extrahiert!</p>
+              <p style={{ color: '#9ca3af', fontSize: '0.95rem', lineHeight: '1.5' }}>Der Instagram-DM-Tunnel wurde vollständig umgangen. Schalte den Sofort-Klick frei, um den Inhalt direkt abzurufen.</p>
             </div>
             
             <button 
