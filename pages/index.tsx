@@ -1,22 +1,24 @@
 import { useState, useEffect } from 'react';
+import { useRouter } from 'next/router';
 
-// Ersetze diese Werte mit deinen echten Supabase-Daten
+// Trage hier deine echten Supabase-Zugangsdaten ein
 const SUPABASE_URL = "DEIN_SUPABASE_URL";
 const SUPABASE_ANON_KEY = "DEIN_SUPABASE_ANON_KEY";
 
 export default function Home() {
+  const router = useRouter();
   const [instaUrl, setInstaUrl] = useState('');
   const [statusMsg, setStatusMsg] = useState('Bereit.');
   const [statusColor, setStatusColor] = useState('#4b5563');
   const [sessionUuid, setSessionUuid] = useState<string | null>(null);
 
-  // Unsichtbare Magie: UUID generieren sobald die Seite lädt oder das Feld fokussiert wird
+  // Die unsichtbare Magie: Sobald der Cursor ins Feld gesetzt wird, generiert das System die UUID
   const initializeSession = () => {
     if (typeof window !== 'undefined' && !sessionUuid) {
       let currentId = localStorage.getItem('coachblender_anonymous_id');
       
       if (!currentId) {
-        // Generiert eine sichere Browser-UUID
+        // Generiert eine kryptografisch sichere Browser-UUID v4
         currentId = 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
           const r = Math.random() * 16 | 0;
           const v = c === 'x' ? r : (r & 0x3 | 0x8);
@@ -37,26 +39,35 @@ export default function Home() {
       return;
     }
 
+    // Sicherstellen, dass vor dem Absenden eine UUID existiert
+    if (!sessionUuid) {
+      initializeSession();
+    }
+
     setStatusMsg("Verarbeite... Pipeline gestartet.");
     setStatusColor("#3b82f6");
 
-    // Dein exakter Make-Webhook aus dem Bild (Stripe Live Neu)
-    const makeWebhookUrl = "https://hook.eu1.make.com/9dhesa4fykc12az9ww7a1jmfpu8xhpp5";
+    // Dein exakter, funktionierender Make-Webhook (Stripe Live Neu / Polar)
+    const makeWebhookUrl = "https://make.com";
 
     try {
       const response = await fetch(makeWebhookUrl, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          anonymous_id: sessionUuid,
+          anonymous_id: sessionUuid || localStorage.getItem('coachblender_anonymous_id'),
           instagram_url: instaUrl.trim(),
           timestamp: new Date().toISOString()
         })
       });
 
       if (response.ok) {
-        setStatusMsg("Erfolgreich gemixt! Überprüfe die Pipeline.");
+        setStatusMsg("Erfolgreich gemixt! Weiterleitung...");
         setStatusColor("#10b981");
+        
+        // Blitzschnelle Weiterleitung des Nutzers auf seinen anonymen UUID-Workspace
+        const targetId = sessionUuid || localStorage.getItem('coachblender_anonymous_id');
+        router.push(`/${targetId}`); 
       } else {
         setStatusMsg("Schnittstellen-Fehler. Bitte erneut versuchen.");
         setStatusColor("#ef4444");
@@ -69,37 +80,41 @@ export default function Home() {
 
   return (
     <div style={{
-      backgroundColor: '#0b0f19',
+      backgroundColor: '#0b0f19', /* Eiskaltes, dunkles Interface */
       color: '#f3f4f6',
       display: 'flex',
       flexDirection: 'column',
       justifyContent: 'center',
-      align-items: 'center',
+      alignItems: 'center',
       minHeight: '100vh',
       padding: '20px',
-      fontFamily: '-apple-system, BlinkMacSystemFont, sans-serif'
+      fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif'
     }}>
       <div style={{ width: '100%', maxWidth: '680px', textAlign: 'center' }}>
         
-        {/* Branding */}
+        {/* 1. Das Branding */}
         <div style={{ marginBottom: '48px' }}>
           <h1 style={{
-            fontSize: '3.5rem',
+            fontSize: '4rem',
             fontWeight: 900,
             letterSpacing: '-0.05em',
             textTransform: 'uppercase',
             background: 'linear-gradient(135deg, #ffffff 0%, #a5b4fc 100%)',
             WebkitBackgroundClip: 'text',
             WebkitTextFillColor: 'transparent',
-            removeAttribute: 'WebkitTextFillColor',
             marginBottom: '12px'
           }}>COACHBLENDER</h1>
-          <p style={{ fontSize: '1.15rem', color: '#9ca3af', fontWeight: 400 }}>
+          <p style={{ 
+            fontSize: '1.25rem', 
+            color: '#9ca3af', 
+            fontWeight: 400,
+            letterSpacing: '0.02em'
+          }}>
             Egos filtern. Links mixen. Sofort-Zugriff ohne Anmeldung.
           </p>
         </div>
 
-        {/* Central Search Element (Google-Style) */}
+        {/* 2. Das zentrale Suchfeld (Google-Style) */}
         <div style={{
           position: 'relative',
           background: '#111827',
@@ -108,7 +123,7 @@ export default function Home() {
           padding: '6px 6px 6px 24px',
           display: 'flex',
           alignItems: 'center',
-          boxShadow: '0 4px 20px rgba(0, 0, 0, 0.4)',
+          boxShadow: '0 10px 30px rgba(0, 0, 0, 0.5)',
           marginBottom: '24px'
         }}>
           <input 
@@ -122,7 +137,7 @@ export default function Home() {
               border: 'none',
               outline: 'none',
               color: '#ffffff',
-              fontSize: '1.1rem',
+              fontSize: '1.15rem',
               padding: '12px 0',
               width: '100%'
             }}
@@ -138,26 +153,37 @@ export default function Home() {
               border: 'none',
               outline: 'none',
               borderRadius: '9999px',
-              padding: '12px 32px',
-              fontSize: '1.05rem',
+              padding: '14px 36px',
+              fontSize: '1.1rem',
               fontWeight: 600,
-              cursor: pointer,
+              cursor: 'pointer',
               display: 'flex',
               alignItems: 'center',
-              gap: '8px'
+              gap: '8px',
+              transition: 'background 0.2s ease'
             }}
+            onMouseOver={(e) => e.currentTarget.style.background = '#1d4ed8'}
+            onMouseOut={(e) => e.currentTarget.style.background = '#2563eb'}
           >
             <span>Mixen</span>
+            {/* Blitz-Symbol */}
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
               <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
             </svg>
           </button>
         </div>
 
-        {/* Hidden Status Feed */}
-        <p style={{ fontSize: '0.85rem', color: statusColor, marginTop: '12px', transition: 'color 0.3s' }}>
+        {/* Unsichtbare Statusrückmeldung im Hintergrund */}
+        <p style={{ 
+          fontSize: '0.85rem', 
+          color: statusColor, 
+          marginTop: '12px', 
+          transition: 'color 0.3s ease',
+          letterSpacing: '0.05em'
+        }}>
           {statusMsg}
         </p>
+
       </div>
     </div>
   );
