@@ -1,35 +1,11 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useRouter } from 'next/router';
-
-// Trage hier deine echten Supabase-Zugangsdaten ein
-const SUPABASE_URL = "DEIN_SUPABASE_URL";
-const SUPABASE_ANON_KEY = "DEIN_SUPABASE_ANON_KEY";
 
 export default function Home() {
   const router = useRouter();
   const [instaUrl, setInstaUrl] = useState('');
   const [statusMsg, setStatusMsg] = useState('Bereit.');
   const [statusColor, setStatusColor] = useState('#4b5563');
-  const [sessionUuid, setSessionUuid] = useState<string | null>(null);
-
-  const initializeSession = () => {
-    if (typeof window !== 'undefined' && !sessionUuid) {
-      let currentId = localStorage.getItem('coachblender_anonymous_id');
-      
-      if (!currentId) {
-        currentId = 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
-          const r = Math.random() * 16 | 0;
-          const v = c === 'x' ? r : (r & 0x3 | 0x8);
-          return v.toString(16);
-        });
-        localStorage.setItem('coachblender_anonymous_id', currentId);
-      }
-      
-      setSessionUuid(currentId);
-      setStatusMsg("Sitzung anonym initialisiert.");
-      setStatusColor("#10b981");
-    }
-  };
 
   const handleMix = async () => {
     if (!instaUrl.trim()) {
@@ -37,15 +13,21 @@ export default function Home() {
       return;
     }
 
-    let currentId = sessionUuid || (typeof window !== 'undefined' ? localStorage.getItem('coachblender_anonymous_id') : null);
-
-    if (!currentId) {
-      initializeSession();
-      currentId = typeof window !== 'undefined' ? localStorage.getItem('coachblender_anonymous_id') : null;
-    }
-
     setStatusMsg("Verarbeite... Pipeline gestartet.");
     setStatusColor("#3b82f6");
+
+    // Generiert eine sichere Browser-UUID direkt beim Klick
+    let currentId = typeof window !== 'undefined' ? localStorage.getItem('coachblender_anonymous_id') : null;
+    if (!currentId) {
+      currentId = 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+        const r = Math.random() * 16 | 0;
+        const v = c === 'x' ? r : (r & 0x3 | 0x8);
+        return v.toString(16);
+      });
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('coachblender_anonymous_id', currentId);
+      }
+    }
 
     const makeWebhookUrl = "https://make.com";
 
@@ -100,12 +82,7 @@ export default function Home() {
             WebkitTextFillColor: 'transparent',
             marginBottom: '12px'
           }}>COACHBLENDER</h1>
-          <p style={{ 
-            fontSize: '1.25rem', 
-            color: '#9ca3af', 
-            fontWeight: 400,
-            letterSpacing: '0.02em'
-          }}>
+          <p style={{ fontSize: '1.25rem', color: '#9ca3af', fontWeight: 400, letterSpacing: '0.02em' }}>
             Egos filtern. Links mixen. Sofort-Zugriff ohne Anmeldung.
           </p>
         </div>
@@ -126,7 +103,6 @@ export default function Home() {
             type="text" 
             value={instaUrl}
             onChange={(e) => setInstaUrl(e.target.value)}
-            onFocus={initializeSession}
             style={{
               flex: 1,
               background: 'transparent',
@@ -166,13 +142,7 @@ export default function Home() {
         </div>
 
         {/* Status Line */}
-        <p style={{ 
-          fontSize: '0.85rem', 
-          color: statusColor, 
-          marginTop: '12px', 
-          transition: 'color 0.3s ease',
-          letterSpacing: '0.05em'
-        }}>
+        <p style={{ fontSize: '0.85rem', color: statusColor, marginTop: '12px', transition: 'color 0.3s ease', letterSpacing: '0.05em' }}>
           {statusMsg}
         </p>
 
