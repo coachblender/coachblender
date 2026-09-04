@@ -1,55 +1,86 @@
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
-import { useEffect, useState } from 'react';
 
-// Ersetze diese Werte wieder mit deinen echten Supabase-Daten
+// Trage hier deine echten Supabase-Zugangsdaten ein
 const SUPABASE_URL = "DEIN_SUPABASE_URL";
 const SUPABASE_ANON_KEY = "DEIN_SUPABASE_ANON_KEY";
 
-export default function Workspace() {
+export default function Home() {
   const router = useRouter();
-  const { id } = router.query; // Das ist die UUID aus der URL
-  const [loading, setLoading] = useState(true);
-  const [paywallActive, setPaywallActive] = useState(true);
-  const [data, setData] = useState<any>(null);
+  const [instaUrl, setInstaUrl] = useState('');
+  const [statusMsg, setStatusMsg] = useState('Bereit.');
+  const [statusColor, setStatusColor] = useState('#4b5563');
+  const [sessionUuid, setSessionUuid] = useState<string | null>(null);
 
-  useEffect(() => {
-    if (!id) return;
-
-    // Simulierter Check: Wir schauen, ob Make die Daten bereits in Supabase abgelegt hat
-    const checkData = async () => {
-      // Hier kommt später dein echter Supabase-Fetch hin
-      // z.B. let { data } = await supabase.from('links').select('*').eq('uuid', id).single();
+  // Die unsichtbare Magie: Sobald der Cursor ins Feld gesetzt wird, generiert das System die UUID
+  const initializeSession = () => {
+    if (typeof window !== 'undefined' && !sessionUuid) {
+      let currentId = localStorage.getItem('coachblender_anonymous_id');
       
-      // Für den Start simulieren wir ein erfolgreiches Abfangen des Links:
-      setTimeout(() => {
-        setData({
-          original_instagram: "https://instagram.com...",
-          extracted_link: "https://die-geheime-kursseite-des-coaches.com"
+      if (!currentId) {
+        // Generiert eine kryptografisch sichere Browser-UUID v4
+        currentId = 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+          const r = Math.random() * 16 | 0;
+          const v = c === 'x' ? r : (r & 0x3 | 0x8);
+          return v.toString(16);
         });
-        setLoading(false);
-      }, 2000);
-    };
-
-    checkData();
-  }, [id]);
-
-  // Funktion für den Stripe- oder Polar-Trigger (Pay-per-Click)
-  const handlePayment = () => {
-    // Hier fügst du einfach deinen Polar- oder Stripe-Checkout-Link ein!
-    window.location.href = "HIER_DEIN_POLAR_ODER_STRIPE_LINK";
+        localStorage.setItem('coachblender_anonymous_id', currentId);
+      }
+      
+      setSessionUuid(currentId);
+      setStatusMsg("Sitzung anonym initialisiert.");
+      setStatusColor("#10b981");
+    }
   };
 
-  if (loading) {
-    return (
-      <div style={{ backgroundColor: '#0b0f19', color: '#f3f4f6', display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '100vh' }}>
-        <p style={{ fontSize: '1.2rem', fontFamily: 'sans-serif' }}>Mixer arbeitet... Daten werden per UUID gesichert...</p>
-      </div>
-    );
-  }
+  const handleMix = async () => {
+    if (!instaUrl.trim()) {
+      alert('Bitte füge zuerst einen gültigen Instagram-Link ein.');
+      return;
+    }
+
+    // Sicherstellen, dass vor dem Absenden eine UUID existiert
+    if (!sessionUuid) {
+      initializeSession();
+    }
+
+    setStatusMsg("Verarbeite... Pipeline gestartet.");
+    setStatusColor("#3b82f6");
+
+    // Dein exakter, funktionierender Make-Webhook (Stripe Live Neu / Polar)
+    const makeWebhookUrl = "https://make.com";
+
+    try {
+      const response = await fetch(makeWebhookUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          anonymous_id: sessionUuid || localStorage.getItem('coachblender_anonymous_id'),
+          instagram_url: instaUrl.trim(),
+          timestamp: new Date().toISOString()
+        })
+      });
+
+      if (response.ok) {
+        setStatusMsg("Erfolgreich gemixt! Weiterleitung...");
+        setStatusColor("#10b981");
+        
+        // Blitzschnelle Weiterleitung des Nutzers auf seinen anonymen UUID-Workspace
+        const targetId = sessionUuid || localStorage.getItem('coachblender_anonymous_id');
+        router.push(`/${targetId}`); 
+      } else {
+        setStatusMsg("Schnittstellen-Fehler. Bitte erneut versuchen.");
+        setStatusColor("#ef4444");
+      }
+    } catch (error) {
+      setStatusMsg("Netzwerkfehler beim Senden an Make.");
+      setStatusColor("#ef4444");
+    }
+  };
 
   return (
     <div style={{
-      backgroundColor: '#0b0f19',
+      backgroundColor: '#0b0f19', /* Eiskaltes, dunkles Interface */
       color: '#f3f4f6',
       display: 'flex',
       flexDirection: 'column',
@@ -57,53 +88,101 @@ export default function Workspace() {
       alignItems: 'center',
       minHeight: '100vh',
       padding: '20px',
-      fontFamily: '-apple-system, BlinkMacSystemFont, sans-serif'
+      fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif'
     }}>
-      <div style={{ width: '100%', maxWidth: '600px', background: '#111827', padding: '40px', borderRadius: '24px', border: '1px solid #1f2937', textAlign: 'center', boxShadow: '0 10px 30px rgba(0,0,0,0.5)' }}>
+      <div style={{ width: '100%', maxWidth: '680px', textAlign: 'center' }}>
         
-        <h2 style={{ fontSize: '2rem', fontWeight: 800, marginBottom: '8px', color: '#ffffff' }}>WORKSPACE</h2>
-        <p style={{ color: '#6b7280', fontSize: '0.85rem', marginBottom: '32px', wordBreak: 'break-all' }}>ID: {id}</p>
+        {/* 1. Das Branding */}
+        <div style={{ marginBottom: '48px' }}>
+          <h1 style={{
+            fontSize: '4rem',
+            fontWeight: 900,
+            letterSpacing: '-0.05em',
+            textTransform: 'uppercase',
+            background: 'linear-gradient(135deg, #ffffff 0%, #a5b4fc 100%)',
+            WebkitBackgroundClip: 'text',
+            WebkitTextFillColor: 'transparent',
+            marginBottom: '12px'
+          }}>COACHBLENDER</h1>
+          <p style={{ 
+            fontSize: '1.25rem', 
+            color: '#9ca3af', 
+            fontWeight: 400,
+            letterSpacing: '0.02em'
+          }}>
+            Egos filtern. Links mixen. Sofort-Zugriff ohne Anmeldung.
+          </p>
+        </div>
 
-        {paywallActive ? (
-          /* DIE SCHRANKE: Hier verdienst du dein Geld */
-          <div>
-            <div style={{ background: '#1e1b4b', border: '1px solid #4338ca', padding: '20px', borderRadius: '16px', marginBottom: '32px' }}>
-              <p style={{ color: '#c7d2fe', fontWeight: 600, marginBottom: '4px' }}>Link erfolgreich extrahiert!</p>
-              <p style={{ color: '#9ca3af', fontSize: '0.95rem' }}>Der Instagram-DM-Tunnel wurde umgangen. Schalte den Sofort-Zugriff frei.</p>
-            </div>
-            
-            <button 
-              onClick={handlePayment}
-              style={{
-                background: 'linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%)',
-                color: '#ffffff',
-                border: 'none',
-                borderRadius: '9999px',
-                padding: '16px 40px',
-                fontSize: '1.1rem',
-                fontWeight: 700,
-                cursor: 'pointer',
-                width: '100%',
-                boxShadow: '0 4px 14px rgba(37, 99, 235, 0.4)'
-              }}
-            >
-              Sofort-Klick freischalten (0,10 €)
-            </button>
-          </div>
-        ) : (
-          /* Nach der Bezahlung sieht er das Ergebnis */
-          <div style={{ textAlign: 'left' }}>
-            <p style={{ color: '#9ca3af', marginBottom: '8px' }}>Gemixtes Ergebnis:</p>
-            <a 
-              href={data?.extracted_link} 
-              target="_blank" 
-              rel="noopener noreferrer"
-              style={{ color: '#3b82f6', fontWeight: 600, fontSize: '1.2rem', wordBreak: 'break-all' }}
-            >
-              {data?.extracted_link}
-            </a>
-          </div>
-        )}
+        {/* 2. Das zentrale Suchfeld (Google-Style) */}
+        <div style={{
+          position: 'relative',
+          background: '#111827',
+          border: '1px solid #1f2937',
+          borderRadius: '9999px',
+          padding: '6px 6px 6px 24px',
+          display: 'flex',
+          alignItems: 'center',
+          boxShadow: '0 10px 30px rgba(0, 0, 0, 0.5)',
+          marginBottom: '24px'
+        }}>
+          <input 
+            type="text" 
+            value={instaUrl}
+            onChange={(e) => setInstaUrl(e.target.value)}
+            onFocus={initializeSession}
+            style={{
+              flex: 1,
+              background: 'transparent',
+              border: 'none',
+              outline: 'none',
+              color: '#ffffff',
+              fontSize: '1.15rem',
+              padding: '12px 0',
+              width: '100%'
+            }}
+            placeholder="://instagram.com..." 
+            autoComplete="off"
+            spellCheck="false"
+          />
+          <button 
+            onClick={handleMix}
+            style={{
+              background: '#2563eb',
+              color: '#ffffff',
+              border: 'none',
+              outline: 'none',
+              borderRadius: '9999px',
+              padding: '14px 36px',
+              fontSize: '1.1rem',
+              fontWeight: 600,
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px',
+              transition: 'background 0.2s ease'
+            }}
+            onMouseOver={(e) => e.currentTarget.style.background = '#1d4ed8'}
+            onMouseOut={(e) => e.currentTarget.style.background = '#2563eb'}
+          >
+            <span>Mixen</span>
+            {/* Blitz-Symbol */}
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
+            </svg>
+          </button>
+        </div>
+
+        {/* Unsichtbare Statusrückmeldung im Hintergrund */}
+        <p style={{ 
+          fontSize: '0.85rem', 
+          color: statusColor, 
+          marginTop: '12px', 
+          transition: 'color 0.3s ease',
+          letterSpacing: '0.05em'
+        }}>
+          {statusMsg}
+        </p>
 
       </div>
     </div>
