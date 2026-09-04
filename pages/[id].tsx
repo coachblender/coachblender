@@ -1,86 +1,84 @@
-import { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
+import { useEffect, useState } from 'react';
 
 // Trage hier deine echten Supabase-Zugangsdaten ein
 const SUPABASE_URL = "DEIN_SUPABASE_URL";
 const SUPABASE_ANON_KEY = "DEIN_SUPABASE_ANON_KEY";
 
-export default function Home() {
+export default function Workspace() {
   const router = useRouter();
-  const [instaUrl, setInstaUrl] = useState('');
-  const [statusMsg, setStatusMsg] = useState('Bereit.');
-  const [statusColor, setStatusColor] = useState('#4b5563');
-  const [sessionUuid, setSessionUuid] = useState<string | null>(null);
+  const { id } = router.query; // Holt die anonyme UUID aus der URL
+  const [loading, setLoading] = useState(true);
+  const [paywallActive, setPaywallActive] = useState(true);
+  const [data, setData] = useState<any>(null);
 
-  // Die unsichtbare Magie: Sobald der Cursor ins Feld gesetzt wird, generiert das System die UUID
-  const initializeSession = () => {
-    if (typeof window !== 'undefined' && !sessionUuid) {
-      let currentId = localStorage.getItem('coachblender_anonymous_id');
-      
-      if (!currentId) {
-        // Generiert eine kryptografisch sichere Browser-UUID v4
-        currentId = 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
-          const r = Math.random() * 16 | 0;
-          const v = c === 'x' ? r : (r & 0x3 | 0x8);
-          return v.toString(16);
+  useEffect(() => {
+    if (!id) return;
+
+    // Diese Funktion prüft in Echtzeit, ob Make die Daten in Supabase abgelegt hat
+    const checkData = async () => {
+      try {
+        // Hier wird die Zeile über die eindeutige ID (UUID) abgefragt
+        // Sobald deine Supabase-Tabelle bereit ist, entkommentierst du diese Zeilen:
+        /*
+        const response = await fetch(`${SUPABASE_URL}/rest/v1/anonymous_sessions?id=eq.${id}`, {
+          headers: {
+            'apikey': SUPABASE_ANON_KEY,
+            'Authorization': `Bearer ${SUPABASE_ANON_KEY}`
+          }
         });
-        localStorage.setItem('coachblender_anonymous_id', currentId);
+        const result = await response.json();
+        if (result && result[0]) {
+          setData(result[0]);
+          if (result[0].status === 'paid') {
+            setPaywallActive(false);
+          }
+        }
+        */
+
+        // Für den allerersten Start simulieren wir die erfolgreiche Extraktion:
+        setData({
+          original_instagram: "https://instagram.com...",
+          extracted_link: "https://die-geheime-kursseite-des-coaches.com"
+        });
+        setLoading(false);
+      } catch (error) {
+        console.error("Fehler beim Laden der Daten aus Supabase:", error);
+        setLoading(false);
       }
-      
-      setSessionUuid(currentId);
-      setStatusMsg("Sitzung anonym initialisiert.");
-      setStatusColor("#10b981");
-    }
+    };
+
+    checkData();
+    // Ein optionaler Intervall-Check (alle 3 Sekunden), falls Make noch im Hintergrund arbeitet
+    const interval = setInterval(checkData, 3000);
+    return () => clearInterval(interval);
+  }, [id]);
+
+  // Die unschlagbare Bezahlschranke über Polar
+  const handlePayment = () => {
+    if (!id) return;
+
+    // DEIN LIVE POLAR PRODUKT LINK
+    // Nutzt den URL-Pass-Through-Trick, um die UUID sauber an den Webhook weiterzugeben
+    const polarProductUrl = "https://polar.sh";
+    
+    // Leitet den Nutzer direkt zum Checkout weiter und brennt die UUID in die Metadaten ein
+    window.location.href = `${polarProductUrl}?metadata[anonymous_id]=${id}`;
   };
 
-  const handleMix = async () => {
-    if (!instaUrl.trim()) {
-      alert('Bitte füge zuerst einen gültigen Instagram-Link ein.');
-      return;
-    }
-
-    // Sicherstellen, dass vor dem Absenden eine UUID existiert
-    if (!sessionUuid) {
-      initializeSession();
-    }
-
-    setStatusMsg("Verarbeite... Pipeline gestartet.");
-    setStatusColor("#3b82f6");
-
-    // Dein exakter, funktionierender Make-Webhook (Stripe Live Neu / Polar)
-    const makeWebhookUrl = "https://make.com";
-
-    try {
-      const response = await fetch(makeWebhookUrl, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          anonymous_id: sessionUuid || localStorage.getItem('coachblender_anonymous_id'),
-          instagram_url: instaUrl.trim(),
-          timestamp: new Date().toISOString()
-        })
-      });
-
-      if (response.ok) {
-        setStatusMsg("Erfolgreich gemixt! Weiterleitung...");
-        setStatusColor("#10b981");
-        
-        // Blitzschnelle Weiterleitung des Nutzers auf seinen anonymen UUID-Workspace
-        const targetId = sessionUuid || localStorage.getItem('coachblender_anonymous_id');
-        router.push(`/${targetId}`); 
-      } else {
-        setStatusMsg("Schnittstellen-Fehler. Bitte erneut versuchen.");
-        setStatusColor("#ef4444");
-      }
-    } catch (error) {
-      setStatusMsg("Netzwerkfehler beim Senden an Make.");
-      setStatusColor("#ef4444");
-    }
-  };
+  if (loading) {
+    return (
+      <div style={{ backgroundColor: '#0b0f19', color: '#f3f4f6', display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '100vh' }}>
+        <p style={{ fontSize: '1.2rem', fontFamily: '-apple-system, sans-serif', letterSpacing: '0.05em' }}>
+          Mixer arbeitet... Daten werden per UUID gesichert...
+        </p>
+      </div>
+    );
+  }
 
   return (
     <div style={{
-      backgroundColor: '#0b0f19', /* Eiskaltes, dunkles Interface */
+      backgroundColor: '#0b0f19',
       color: '#f3f4f6',
       display: 'flex',
       flexDirection: 'column',
@@ -90,99 +88,78 @@ export default function Home() {
       padding: '20px',
       fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif'
     }}>
-      <div style={{ width: '100%', maxWidth: '680px', textAlign: 'center' }}>
+      <div style={{ 
+        width: '100%', 
+        maxWidth: '600px', 
+        background: '#111827', 
+        padding: '40px', 
+        borderRadius: '24px', 
+        border: '1px solid #1f2937', 
+        textAlign: 'center', 
+        boxShadow: '0 10px 40px rgba(0,0,0,0.6)' 
+      }}>
         
-        {/* 1. Das Branding */}
-        <div style={{ marginBottom: '48px' }}>
-          <h1 style={{
-            fontSize: '4rem',
-            fontWeight: 900,
-            letterSpacing: '-0.05em',
-            textTransform: 'uppercase',
-            background: 'linear-gradient(135deg, #ffffff 0%, #a5b4fc 100%)',
-            WebkitBackgroundClip: 'text',
-            WebkitTextFillColor: 'transparent',
-            marginBottom: '12px'
-          }}>COACHBLENDER</h1>
-          <p style={{ 
-            fontSize: '1.25rem', 
-            color: '#9ca3af', 
-            fontWeight: 400,
-            letterSpacing: '0.02em'
-          }}>
-            Egos filtern. Links mixen. Sofort-Zugriff ohne Anmeldung.
-          </p>
-        </div>
-
-        {/* 2. Das zentrale Suchfeld (Google-Style) */}
-        <div style={{
-          position: 'relative',
-          background: '#111827',
-          border: '1px solid #1f2937',
-          borderRadius: '9999px',
-          padding: '6px 6px 6px 24px',
-          display: 'flex',
-          alignItems: 'center',
-          boxShadow: '0 10px 30px rgba(0, 0, 0, 0.5)',
-          marginBottom: '24px'
-        }}>
-          <input 
-            type="text" 
-            value={instaUrl}
-            onChange={(e) => setInstaUrl(e.target.value)}
-            onFocus={initializeSession}
-            style={{
-              flex: 1,
-              background: 'transparent',
-              border: 'none',
-              outline: 'none',
-              color: '#ffffff',
-              fontSize: '1.15rem',
-              padding: '12px 0',
-              width: '100%'
-            }}
-            placeholder="://instagram.com..." 
-            autoComplete="off"
-            spellCheck="false"
-          />
-          <button 
-            onClick={handleMix}
-            style={{
-              background: '#2563eb',
-              color: '#ffffff',
-              border: 'none',
-              outline: 'none',
-              borderRadius: '9999px',
-              padding: '14px 36px',
-              fontSize: '1.1rem',
-              fontWeight: 600,
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '8px',
-              transition: 'background 0.2s ease'
-            }}
-            onMouseOver={(e) => e.currentTarget.style.background = '#1d4ed8'}
-            onMouseOut={(e) => e.currentTarget.style.background = '#2563eb'}
-          >
-            <span>Mixen</span>
-            {/* Blitz-Symbol */}
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-              <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
-            </svg>
-          </button>
-        </div>
-
-        {/* Unsichtbare Statusrückmeldung im Hintergrund */}
-        <p style={{ 
-          fontSize: '0.85rem', 
-          color: statusColor, 
-          marginTop: '12px', 
-          transition: 'color 0.3s ease',
-          letterSpacing: '0.05em'
-        }}>
-          {statusMsg}
+        <h2 style={{ fontSize: '2.25rem', fontWeight: 900, marginBottom: '8px', color: '#ffffff', letterSpacing: '-0.03em' }}>
+          WORKSPACE
+        </h2>
+        <p style={{ color: '#4b5563', fontSize: '0.85rem', marginBottom: '32px', wordBreak: 'break-all', letterSpacing: '0.05em' }}>
+          SESSION-ID: {id}
         </p>
+
+        {paywallActive ? (
+          /* DIE SCHRANKE: Hier wird ab jetzt ohne Stripe-Frust abkassiert */
+          <div>
+            <div style={{ 
+              background: '#1e1b4b', 
+              border: '1px solid #4338ca', 
+              padding: '24px', 
+              borderRadius: '16px', 
+              marginBottom: '32px',
+              textAlign: 'left'
+            }}>
+              <p style={{ color: '#c7d2fe', fontWeight: 700, marginBottom: '6px', fontSize: '1.1rem' }}>
+                💥 Link erfolgreich extrahiert!
+              </p>
+              <p style={{ color: '#9ca3af', fontSize: '0.95rem', lineHeight: '1.5' }}>
+                Der Instagram-DM-Tunnel wurde vollständig umgangen. Schalte den Sofort-Klick frei, um den Inhalt direkt abzurufen.
+              </p>
+            </div>
+            
+            <button 
+              onClick={handlePayment}
+              style={{
+                background: 'linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%)',
+                color: '#ffffff',
+                border: 'none',
+                borderRadius: '9999px',
+                padding: '18px 40px',
+                fontSize: '1.15rem',
+                fontWeight: 700,
+                cursor: 'pointer',
+                width: '100%',
+                boxShadow: '0 4px 20px rgba(37, 99, 235, 0.4)',
+                transition: 'transform 0.1s ease'
+              }}
+              onMouseOver={(e) => e.currentTarget.style.transform = 'scale(1.01)'}
+              onMouseOut={(e) => e.currentTarget.style.transform = 'scale(1)'}
+            >
+              Sofort-Klick freischalten (Pay what you want)
+            </button>
+          </div>
+        ) : (
+          /* Das befreite Ergebnis nach der erfolgreichen Polar-Maut */
+          <div style={{ textAlign: 'left', background: '#064e3b', border: '1px solid #059669', padding: '24px', borderRadius: '16px' }}>
+            <p style={{ color: '#a7f3d0', fontWeight: 700, marginBottom: '8px' }}>Ziel-Link freigeschaltet:</p>
+            <a 
+              href={data?.extracted_link} 
+              target="_blank" 
+              rel="noopener noreferrer"
+              style={{ color: '#ffffff', fontWeight: 600, fontSize: '1.25rem', wordBreak: 'break-all', decoration: 'underline' }}
+            >
+              {data?.extracted_link}
+            </a>
+          </div>
+        )}
 
       </div>
     </div>
