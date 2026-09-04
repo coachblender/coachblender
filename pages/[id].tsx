@@ -27,8 +27,8 @@ export default function Workspace() {
         });
         const result = await response.json();
         if (result && result.length > 0) {
-          setData(result[0]);
-          if (result[0].status === 'paid') {
+          setData(result);
+          if (result.status === 'paid') {
             setPaywallActive(false);
           }
         }
@@ -141,7 +141,7 @@ export default function Workspace() {
               href={data?.extracted_link} 
               target="_blank" 
               rel="noopener noreferrer"
-              style={{ color: '#ffffff', fontWeight: 600, fontSize: '1.25rem', wordBreak: 'break-all', textDecoration: 'underline' }}
+              style={{ color: '#3b82f6', fontWeight: 600, fontSize: '1.25rem', wordBreak: 'break-all' }}
             >
               {data?.extracted_link}
             </a>
