@@ -1,6 +1,11 @@
 import { useState } from 'react';
 import { useRouter } from 'next/router';
 
+// Deine neuen Supabase-Singapur-Daten:
+const SUPABASE_URL = "https://supabase.co";
+const SUPABASE_ANON_KEY = "DEIN_SUPABASE_PUBLISHABLE_ODER_ANON_KEY";
+const MAKE_WEBHOOK_URL = ""; // Optional: Falls du noch einen Make-Webhook für den Instagram-Scraper hast, hier eintragen
+
 export default function Home() {
   const router = useRouter();
   const [instaUrl, setInstaUrl] = useState('');
@@ -29,29 +34,47 @@ export default function Home() {
       }
     }
 
-    const makeWebhookUrl = "https://make.com";
-
     try {
-      const response = await fetch(makeWebhookUrl, {
+      // 1. Session direkt in Supabase anlegen (upsert, falls ID schon existiert)
+      const supaRes = await fetch(`${SUPABASE_URL}/rest/v1/anonymous_sessions`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          'apikey': SUPABASE_ANON_KEY,
+          'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+          'Prefer': 'resolution=merge-duplicates,return=minimal'
+        },
         body: JSON.stringify({
-          anonymous_id: currentId,
+          id: currentId,
           instagram_url: instaUrl.trim(),
-          timestamp: new Date().toISOString()
+          status: 'unpaid'
         })
       });
 
-      if (response.ok) {
-        setStatusMsg("Erfolgreich gemixt! Weiterleitung...");
-        setStatusColor("#10b981");
-        router.push(`/${currentId}`); 
-      } else {
-        setStatusMsg("Schnittstellen-Fehler. Bitte erneut versuchen.");
+      if (!supaRes.ok) {
+        setStatusMsg("Datenbank-Fehler beim Anlegen der Session.");
         setStatusColor("#ef4444");
+        return;
       }
+
+      // 2. Optional an Make senden (nur wenn eine echte Webhook-URL hinterlegt ist)
+      if (MAKE_WEBHOOK_URL && MAKE_WEBHOOK_URL.startsWith("https://hook.")) {
+        await fetch(MAKE_WEBHOOK_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            anonymous_id: currentId,
+            instagram_url: instaUrl.trim(),
+            timestamp: new Date().toISOString()
+          })
+        });
+      }
+
+      setStatusMsg("Erfolgreich gemixt! Weiterleitung...");
+      setStatusColor("#10b981");
+      router.push(`/${currentId}`);
     } catch (error) {
-      setStatusMsg("Netzwerkfehler beim Senden an Make.");
+      setStatusMsg("Netzwerkfehler beim Starten der Session.");
       setStatusColor("#ef4444");
     }
   };
