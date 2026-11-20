@@ -55,19 +55,6 @@ export default function Home() {
         setStatusColor("#ef4444");
         return;
       }
-
-      if (MAKE_WEBHOOK_URL && MAKE_WEBHOOK_URL.startsWith("https://hook.")) {
-        await fetch(MAKE_WEBHOOK_URL, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            anonymous_id: currentId,
-            instagram_url: instaUrl.trim(),
-            timestamp: new Date().toISOString()
-          })
-        });
-      }
-
       setStatusMsg("Erfolgreich gemixt! Weiterleitung...");
       setStatusColor("#10b981");
       router.push(`/${currentId}`);
