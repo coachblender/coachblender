@@ -1,10 +1,9 @@
 import { useState } from 'react';
 import { useRouter } from 'next/router';
 
-// Deine neuen Supabase-Singapur-Daten:
 const SUPABASE_URL = "https://supabase.co";
 const SUPABASE_ANON_KEY = "DEIN_SUPABASE_PUBLISHABLE_ODER_ANON_KEY";
-const MAKE_WEBHOOK_URL = ""; // Optional: Falls du noch einen Make-Webhook für den Instagram-Scraper hast, hier eintragen
+const MAKE_WEBHOOK_URL = ""; // Optional: Falls du einen Make-Webhook für den Scraper hast, hier eintragen
 
 export default function Home() {
   const router = useRouter();
@@ -21,7 +20,6 @@ export default function Home() {
     setStatusMsg("Verarbeite... Pipeline gestartet.");
     setStatusColor("#3b82f6");
 
-    // Generiert eine sichere Browser-UUID direkt beim Klick
     let currentId = typeof window !== 'undefined' ? localStorage.getItem('coachblender_anonymous_id') : null;
     if (!currentId) {
       currentId = 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
@@ -35,7 +33,6 @@ export default function Home() {
     }
 
     try {
-      // 1. Session direkt in Supabase anlegen (upsert, falls ID schon existiert)
       const supaRes = await fetch(`${SUPABASE_URL}/rest/v1/anonymous_sessions`, {
         method: 'POST',
         headers: {
@@ -57,7 +54,6 @@ export default function Home() {
         return;
       }
 
-      // 2. Optional an Make senden (nur wenn eine echte Webhook-URL hinterlegt ist)
       if (MAKE_WEBHOOK_URL && MAKE_WEBHOOK_URL.startsWith("https://hook.")) {
         await fetch(MAKE_WEBHOOK_URL, {
           method: 'POST',
@@ -92,8 +88,6 @@ export default function Home() {
       fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif'
     }}>
       <div style={{ width: '100%', maxWidth: '680px', textAlign: 'center' }}>
-        
-        {/* Branding */}
         <div style={{ marginBottom: '48px' }}>
           <h1 style={{
             fontSize: '4rem',
@@ -110,7 +104,6 @@ export default function Home() {
           </p>
         </div>
 
-        {/* Central Search Element (Google-Style) */}
         <div style={{
           position: 'relative',
           background: '#111827',
@@ -164,11 +157,9 @@ export default function Home() {
           </button>
         </div>
 
-        {/* Status Line */}
         <p style={{ fontSize: '0.85rem', color: statusColor, marginTop: '12px', transition: 'color 0.3s ease', letterSpacing: '0.05em' }}>
           {statusMsg}
         </p>
-
       </div>
     </div>
   );
