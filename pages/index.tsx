@@ -1,3 +1,5 @@
+const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || "https://supabase.co";
+const SUPABASE_ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY || "";
 import { useState } from 'react';
 import { useRouter } from 'next/router';
 
