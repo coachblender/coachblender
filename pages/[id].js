@@ -1,6 +1,10 @@
 import { useRouter } from 'next/router';
 import { useEffect, useState } from 'react';
 
+const SUPABASE_URL = "https://supabase.co";
+const SUPABASE_ANON_KEY = "DEIN_SUPABASE_PUBLISHABLE_ODER_ANON_KEY";
+const STRIPE_PAYMENT_LINK = "https://stripe.com";
+
 export default function Workspace() {
   const router = useRouter();
   const { id } = router.query;
@@ -13,11 +17,28 @@ export default function Workspace() {
 
     const checkData = async () => {
       try {
-        // Simulierter Startwert
-        setData({
-          original_instagram: "https://instagram.com...",
-          extracted_link: "https://die-geheime-kursseite-des-coaches.com"
-        });
+        const res = await fetch(
+          `${SUPABASE_URL}/rest/v1/anonymous_sessions?id=eq.${id}&select=*`,
+          {
+            headers: {
+              apikey: SUPABASE_ANON_KEY,
+              Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
+            },
+          }
+        );
+
+        const rows = await res.json();
+        if (rows && rows.length > 0) {
+          const session = rows;
+          setData({
+            original_instagram: session.instagram_url,
+            extracted_link: session.extracted_link,
+          });
+
+          if (session.status === "paid") {
+            setPaywallActive(false);
+          }
+        }
         setLoading(false);
       } catch (error) {
         console.error("Fehler beim Laden:", error);
@@ -32,8 +53,7 @@ export default function Workspace() {
 
   const handlePayment = () => {
     if (!id) return;
-    const polarProductUrl = "https://polar.sh";
-    window.location.href = `${polarProductUrl}?metadata[anonymous_id]=${id}`;
+    window.location.href = `${STRIPE_PAYMENT_LINK}?client_reference_id=${id}`;
   };
 
   if (loading) {
@@ -92,7 +112,7 @@ export default function Workspace() {
                 boxShadow: '0 4px 20px rgba(37, 99, 235, 0.4)'
               }}
             >
-              Sofort-Klick freischalten (Pay what you want)
+              Sofort-Klick freischalten (0,50 €)
             </button>
           </div>
         ) : (
@@ -104,7 +124,7 @@ export default function Workspace() {
               rel="noopener noreferrer"
               style={{ color: '#3b82f6', fontWeight: 600, fontSize: '1.25rem', wordBreak: 'break-all' }}
             >
-              {data?.extracted_link}
+              {data?.extracted_link || "Link wird geladen..."}
             </a>
           </div>
         )}
