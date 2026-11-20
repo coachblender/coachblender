@@ -2,14 +2,12 @@
 import { NextApiRequest, NextApiResponse } from 'next';
 import { createClient } from '@supabase/supabase-js';
 
-// Vercel anweisen, den Datenstrom NICHT als JSON zu parsen (Raw Body)
 export const config = {
   api: {
     bodyParser: false,
   },
 };
 
-// Hilfsfunktion, um den unberührten Datenstrom von Stripe einzulesen
 async function getRawBody(readable: any) {
   const chunks = [];
   for await (const chunk of readable) {
@@ -18,38 +16,45 @@ async function getRawBody(readable: any) {
   return Buffer.concat(chunks).toString('utf8');
 }
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL || '',
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || ''
-);
+// Deine neue Supabase-Singapur-Instanz (nutzt Vercel Environment Variables oder deine direkte URL)
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://supabase.co';
+// Wichtig: Für serverseitige Updates am besten den Secret/Service-Role Key in Vercel hinterlegen
+const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
+
+const supabase = createClient(supabaseUrl, supabaseKey);
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
-  if (req.method !== 'POST') return res.status(405).end();
+  if (req.method !== 'POST') {
+    return res.status(405).json({ error: 'Method Not Allowed' });
+  }
 
   try {
-    // Den unberührten String für Stripe sichern
     const rawBody = await getRawBody(req);
-    const event = JSON.parse(rawBody); // Einfaches Parsing ohne strenge Signatur-Prüfung
+    const event = JSON.parse(rawBody);
 
+    // Prüft auf abgeschlossene Stripe-Checkout-Zahlung
     if (event.type === 'checkout.session.completed') {
       const session = event.data.object;
 
-      // Daten aus den Stripe-Metadaten ziehen
-      const transactionId = session.id;
-      const totalAmount = session.amount_total / 100;
-      const coachId = session.metadata?.coach_id || 'unbekannt';
-      const productId = session.metadata?.product_id || 'default_product';
-      const buyerIp = session.customer_details?.ip_address || '127.0.0.1';
+      // Liest die Session-UUID aus client_reference_id (oder alternativ aus metadata.anonymous_id)
+      const anonymousId = session.client_reference_id || session.metadata?.anonymous_id;
 
-      // Abgleich-Funktion in Supabase triggern
-      await supabase.rpc('match_and_insert_sale', {
-        p_transaction_id: transactionId,
-        p_coach_id: coachId,
-        p_product_id: productId,
-        p_total_amount: totalAmount,
-        p_buyer_ip: buyerIp,
-        p_buyer_fingerprint: 'stripe_webhook_pushed'
-      });
+      if (!anonymousId) {
+        return res.status(200).json({ received: true, status: 'ignored_no_client_reference_id' });
+      }
+
+      // Setzt den Status in anonymous_sessions auf "paid"
+      const { error } = await supabase
+        .from('anonymous_sessions')
+        .update({ status: 'paid' })
+        .eq('id', anonymousId);
+
+      if (error) {
+        console.error('Supabase Update Fehler:', error.message);
+        return res.status(500).json({ error: error.message });
+      }
+
+      return res.status(200).json({ received: true, updated_session: anonymousId });
     }
 
     return res.status(200).json({ received: true });
